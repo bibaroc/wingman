@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -34,7 +35,7 @@ type Log struct {
 	out   io.Writer
 	flags int
 	buff  cbuff
-	fptrs []uintptr
+	b     sync.Pool
 	sync.Mutex
 }
 
@@ -231,53 +232,62 @@ func (l *Log) caller() string {
 func (l *Log) write(level LogLevel, args ...interface{}) error {
 	callerInfo := l.caller()
 
+	buff := l.b.Get().(*bytes.Buffer)
+	buff.Reset()
+
+	buff.WriteString(level.String())
+	buff.WriteByte(' ')
+	buff.WriteString(callerInfo)
+	buff.WriteByte(' ')
+
+	fmt.Fprint(buff, args...)
+
 	l.Lock()
-	l.buff = l.buff[:0]
-
-	l.output(level, callerInfo)
-
-	fmt.Fprint(&l.buff, args...)
-	_, err := l.out.Write(l.buff)
-
+	_, err := l.out.Write(buff.Bytes())
 	l.Unlock()
+
+	l.b.Put(buff)
 	return err
 }
 func (l *Log) writeln(level LogLevel, args ...interface{}) error {
 	callerInfo := l.caller()
 
+	buff := l.b.Get().(*bytes.Buffer)
+	buff.Reset()
+
+	buff.WriteString(level.String())
+	buff.WriteByte(' ')
+	buff.WriteString(callerInfo)
+	buff.WriteByte(' ')
+
+	fmt.Fprintln(buff, args...)
+
 	l.Lock()
-	l.buff = l.buff[:0]
-
-	l.output(level, callerInfo)
-
-	fmt.Fprintln(&l.buff, args...)
-	_, err := l.out.Write(l.buff)
-
+	_, err := l.out.Write(buff.Bytes())
 	l.Unlock()
+
+	l.b.Put(buff)
+
 	return err
 }
 func (l *Log) writef(level LogLevel, format string, args ...interface{}) error {
 	callerInfo := l.caller()
 
+	buff := l.b.Get().(*bytes.Buffer)
+	buff.Reset()
+
+	buff.WriteString(level.String())
+	buff.WriteByte(' ')
+	buff.WriteString(callerInfo)
+	buff.WriteByte(' ')
+
+	fmt.Fprintf(buff, format, args...)
 	l.Lock()
-	l.buff = l.buff[:0]
-
-	l.output(level, callerInfo)
-
-	fmt.Fprintf(&l.buff, format, args...)
-	_, err := l.out.Write(l.buff)
-
+	_, err := l.out.Write(buff.Bytes())
 	l.Unlock()
+
+	l.b.Put(buff)
 	return err
-}
-
-func (l *Log) output(level LogLevel, callerInfo string) {
-	l.buff = append(l.buff, level.String()...)
-
-	l.buff = append(l.buff, ' ')
-	l.buff = append(l.buff, callerInfo...)
-	l.buff = append(l.buff, ' ')
-
 }
 
 func NewLogger(
@@ -289,7 +299,10 @@ func NewLogger(
 		level: level,
 		out:   writer,
 		flags: flags,
-		buff:  make([]byte, 0, 10*1<<10),
-		fptrs: make([]uintptr, 1),
+		b: sync.Pool{
+			New: func() interface{} {
+				return bytes.NewBuffer(make([]byte, 0, 10*1<<10))
+			},
+		},
 	}
 }
