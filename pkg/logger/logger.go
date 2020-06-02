@@ -211,24 +211,20 @@ func (l *Log) caller() string {
 	if l.flags&WithCallerInfo == 0 {
 		return "-"
 	}
-	const SKIPCALLERS = 4
+	const SKIPCALLERS = 3
 	const NOTFOUND = "n/a"
 
-	n := runtime.Callers(SKIPCALLERS, l.fptrs)
-	if n == 0 {
+	pc, _, _, ok := runtime.Caller(SKIPCALLERS)
+	if !ok {
 		return NOTFOUND
 	}
-	frame := runtime.CallersFrames(l.fptrs[:n])
 
-	f, _ := frame.Next()
-	fnName := f.Function
-	for i := len(f.Function) - 1; i > 0; i-- {
-		if os.IsPathSeparator(f.Function[i]) {
-			fnName = f.Function[i+1:]
-			break
+	fnName := runtime.FuncForPC(pc).Name()
+	for i := len(fnName) - 1; i > 0; i-- {
+		if os.IsPathSeparator(fnName[i]) {
+			return fnName[i+1:]
 		}
 	}
-
 	return fnName
 }
 
