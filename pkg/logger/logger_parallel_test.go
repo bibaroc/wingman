@@ -11,58 +11,78 @@ import (
 	"github.com/go-playground/log/v7/handlers/console"
 )
 
-const (
-	short = "this will be fast"
-)
-
-func BenchmarkLoggerCustom(b *testing.B) {
+func BenchmarkLoggerParallelCustom(b *testing.B) {
 	log := logger.NewLogger(logger.ERROR, ioutil.Discard, 0)
+	b.SetBytes(int64(len(short)))
+
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		log.Errorln(short)
-		b.SetBytes(int64(len(short)))
-	}
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			log.Errorln(short)
+		}
+	})
 }
-func BenchmarkLoggerStd(b *testing.B) {
+func BenchmarkLoggerParallelStd(b *testing.B) {
 	log := log.New(ioutil.Discard, "std", 0)
+	b.SetBytes(int64(len(short)))
+
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		log.Println(short)
-		b.SetBytes(int64(len(short)))
-	}
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			log.Println(short)
+		}
+	})
 }
 
-func BenchmarkLoggerPlayground(b *testing.B) {
+func BenchmarkLoggerParallelPlayground(b *testing.B) {
 	csole := console.New(false)
 	csole.SetDisplayColor(false)
 	csole.SetWriter(ioutil.Discard)
 	pglog.AddHandler(csole, pglog.AllLevels...)
+	b.SetBytes(int64(len(short)))
+
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		pglog.Debug(short)
-		b.SetBytes(int64(len(short)))
-	}
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			pglog.Debug(short)
+		}
+	})
 }
-func BenchmarkLoggerCustomWithCallerInfo(b *testing.B) {
+func BenchmarkLoggerParallelCustomWCaller(b *testing.B) {
 	log := logger.NewLogger(logger.ERROR, ioutil.Discard, logger.WithCallerInfo)
+	b.SetBytes(int64(len(short)))
+
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		log.Errorln(short)
-		b.SetBytes(int64(len(short)))
-	}
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			log.Errorln(short)
+		}
+	})
 }
-func BenchmarkLoggerStdWithCallerInfo(b *testing.B) {
+func BenchmarkLoggerParallelStdWCaller(b *testing.B) {
 	log := log.New(ioutil.Discard, "std", log.Lshortfile)
+	b.SetBytes(int64(len(short)))
+
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		log.Println(short)
-		b.SetBytes(int64(len(short)))
-	}
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			log.Println(short)
+		}
+	})
 }
-func BenchmarkLoggerFmt(b *testing.B) {
+func BenchmarkLoggerParallelFmt(b *testing.B) {
+	b.SetBytes(int64(len(short)))
+
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		fmt.Fprintln(ioutil.Discard, short)
-		b.SetBytes(int64(len(short)))
-	}
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			fmt.Fprintln(ioutil.Discard, short)
+		}
+	})
 }
