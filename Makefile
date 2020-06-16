@@ -4,6 +4,7 @@ regen:
 prepare:
 	go get -u golang.org/x/perf/cmd/benchstat
 	go get -u golang.org/x/tools/cmd/stringer
+	go get -u github.com/google/go-cmp/cmp
 
 bench:
 	go test ./pkg/logger -benchmem -bench . -run '' -count 5 | tee tmp/logger.txt
