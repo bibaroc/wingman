@@ -9,3 +9,5 @@ prepare:
 bench:
 	go test ./pkg/logger -benchmem -bench . -run '' -count 5 | tee tmp/logger.txt
 	@benchstat tmp/logger.txt
+	go test ./pkg/fst -benchmem -bench . -run '' -count 5 | tee tmp/fst.txt
+	@benchstat tmp/fst.txt

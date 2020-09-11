@@ -21,13 +21,13 @@ const (
 	TRACE                   // [TRAC]
 )
 
-type CallerEnabled bool
-
 const (
 	WithCallerInfo = 1 << iota
 )
 
-var _ pkg.Logger = (*Log)(nil)
+var (
+	_ pkg.Logger = (*Log)(nil)
+)
 
 type Log struct {
 	level LogLevel
@@ -309,4 +309,12 @@ func NewLogger(
 			},
 		},
 	}
+}
+
+func NewDebugLogger() *Log {
+	return NewLogger(
+		DEBUG,
+		os.Stdout,
+		WithCallerInfo,
+	)
 }
